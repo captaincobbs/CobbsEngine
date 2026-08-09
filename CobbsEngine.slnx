@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Engine.Core.Tests/Engine.Core.Tests.csproj" />
+  <Project Path="Engine.Core/Engine.Core.csproj" />
+  <Project Path="Engine.MonoGame/Engine.MonoGame.csproj" />
+  <Project Path="Engine.Runtime/Engine.Runtime.csproj" />
+  <Project Path="Game.Template/Game.Template.csproj" />
+</Solution>
