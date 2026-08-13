@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="MonoGame.Framework" Version="3.8.5" />
+	<ProjectReference Include="..\Engine.Core\Engine.Core.csproj" />
+  </ItemGroup>
+
 </Project>

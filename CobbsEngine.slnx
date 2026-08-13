@@ -2,8 +2,8 @@
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
   </Folder>
-  <Project Path="../../../../../../Programming/MonoGame/CobbsEngine/Engine.Core.Tests/Engine.Core.Tests.csproj" />
-  <Project Path="../../../../../../Programming/MonoGame/CobbsEngine/Engine.Core/Engine.Core.csproj" />
-  <Project Path="../../../../../../Programming/MonoGame/CobbsEngine/Engine.MonoGame/Engine.MonoGame.csproj" />
-  <Project Path="../../../../../../Programming/MonoGame/CobbsEngine/Game.Template/Template.csproj" />
+  <Project Path="Engine.Core.Tests/Engine.Core.Tests.csproj" />
+  <Project Path="Engine.Core/Engine.Core.csproj" />
+  <Project Path="Engine.MonoGame/Engine.MonoGame.csproj" />
+  <Project Path="Game.Template/Template.csproj" />
 </Solution>
