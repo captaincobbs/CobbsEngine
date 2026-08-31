@@ -23,11 +23,11 @@ A private, reusable MonoGame-based framework intended primarily for 2D games suc
 
 ## Solution Structure
 
-- [ ] Create solution
-- [ ] Create `Engine.Core`
-- [ ] Create `Engine.Runtime`
-- [ ] Create `Game` / template project
-- [ ] Create test projects
+- [x] Create solution
+- [x] Create `Engine.Core`
+- [x] Create `Engine.Runtime`
+- [x] Create `Game` / template project
+- [x] Create test projects
 - [ ] Establish project references/dependency direction
 - [ ] Establish naming conventions
 - [ ] Establish nullable reference type / warning policy
