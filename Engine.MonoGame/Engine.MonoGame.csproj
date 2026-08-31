@@ -7,4 +7,10 @@
       <PrivateAssets>All</PrivateAssets>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Services\Input\" />
+    <Folder Include="Services\Graphics\" />
+    <Folder Include="Services\Content\" />
+    <Folder Include="Services\Networking\" />
+  </ItemGroup>
 </Project>
