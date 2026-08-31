@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Engine.Core.Utilities
+namespace Engine.Core.Enviroment
 {
     [Flags]
     public enum RuntimePlatform

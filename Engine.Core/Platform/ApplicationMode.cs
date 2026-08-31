@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Engine.Core.Configuration
+namespace Engine.Core.Platform
 {
     public enum ApplicationMode
     {
