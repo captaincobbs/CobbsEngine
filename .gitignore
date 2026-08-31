@@ -64,3 +64,4 @@ monodroid*.msi
 *.VC.opendb
 
 artifacts/
+/Documentation/.obsidian
