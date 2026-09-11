@@ -5,5 +5,6 @@
   <Project Path="Engine.Core.Tests/Engine.Core.Tests.csproj" />
   <Project Path="Engine.Core/Engine.Core.csproj" />
   <Project Path="Engine.MonoGame/Engine.MonoGame.csproj" />
+  <Project Path="Engine.Runtime/Engine.Runtime.csproj" Id="16419984-bf35-43cb-a367-5cae1f599bfb" />
   <Project Path="Game.Template/Template.csproj" />
 </Solution>

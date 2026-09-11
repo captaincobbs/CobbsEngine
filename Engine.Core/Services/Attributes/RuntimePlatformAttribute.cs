@@ -1,4 +1,4 @@
-﻿using Engine.Core.Utilities;
+﻿using Engine.Core.Platform;
 
 namespace Engine.Core.Services.Attributes
 {

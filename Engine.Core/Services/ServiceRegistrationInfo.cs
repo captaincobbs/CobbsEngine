@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
+﻿using System.Reflection;
 
-using Engine.Core.Services.Attributes;
-using Engine.Core.Utilities;
-
-using MonoGame.Framework.Utilities;
+using Engine.Core.Platform;
 
 namespace Engine.Core.Services
 {
+    /// <summary>Holds info regarding the service's requirements and registration details.</summary>
     public sealed class ServiceRegistrationInfo
     {
         public Type ServiceType { get; }
@@ -17,11 +12,12 @@ namespace Engine.Core.Services
         public Assembly SourceAssembly { get; }
 
         public int Priority { get; }
+        public int LoadingWeight { get; }
         public ServiceFailureBehavior FailureBehavior { get; }
 
-        public bool IsHeadlessOnly { get; }
+        public ApplicationMode ApplicationMode { get; }
         public RuntimePlatform TargetPlatforms { get; }
-        public GraphicsBackend? GraphicsBackend { get; }
+        public GraphicsAPI? GraphicsBackend { get; }
 
         public IReadOnlyList<Type> Dependencies { get; }
 
@@ -29,22 +25,24 @@ namespace Engine.Core.Services
             Type serviceType, 
             Type implementationType, 
             Assembly sourceAssembly, 
-            int priority, 
-            ServiceFailureBehavior failureBehavior, 
-            bool isHeadlessOnly, 
+            int priority,
+            int loadingWeight,
+            ServiceFailureBehavior failureBehavior,
+            ApplicationMode applicationMode, 
             RuntimePlatform targetPlatforms, 
-            GraphicsBackend? graphicsBackend, 
+            GraphicsAPI? graphicsBackend, 
             IReadOnlyList<Type> dependencies)
         {
             ServiceType = serviceType;
             ImplementationType = implementationType;
             SourceAssembly = sourceAssembly;
             Priority = priority;
+            LoadingWeight = loadingWeight;
             FailureBehavior = failureBehavior;
-            IsHeadlessOnly = isHeadlessOnly;
+            ApplicationMode = applicationMode;
             TargetPlatforms = targetPlatforms;
             GraphicsBackend = graphicsBackend;
-            Dependencies = dependencies;
+            Dependencies = new List<Type>(dependencies);
         }
     }
 }

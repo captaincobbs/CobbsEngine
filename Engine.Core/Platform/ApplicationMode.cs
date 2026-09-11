@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Engine.Core.Platform
+﻿namespace Engine.Core.Platform
 {
+    [Flags]
     public enum ApplicationMode
     {
-        Windowed,
-        Headless,
-        WindowedWithConsole,
+        None = 0,
+        Windowed            = 1 << 0,
+        Headless            = 1 << 1,
+        WindowedWithConsole = 1 << 2,
+        All = Windowed | Headless | WindowedWithConsole,
     }
 }

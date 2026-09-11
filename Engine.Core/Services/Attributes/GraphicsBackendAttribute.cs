@@ -1,15 +1,13 @@
-﻿using Engine.Core.Utilities;
-
-using MonoGame.Framework.Utilities;
+﻿using Engine.Core.Platform;
 
 namespace Engine.Core.Services.Attributes
 {
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class GraphicsBackendAttribute : Attribute
     {
-        public readonly GraphicsBackend Backend;
+        public readonly GraphicsAPI Backend;
 
-        public GraphicsBackendAttribute(GraphicsBackend backend)
+        public GraphicsBackendAttribute(GraphicsAPI backend)
         {
             Backend = backend;
         }

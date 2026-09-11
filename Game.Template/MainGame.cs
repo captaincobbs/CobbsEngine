@@ -1,4 +1,8 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+
+using Engine.Core.Services;
+
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
@@ -6,11 +10,16 @@ namespace Template
 {
     public class MainGame : Game
     {
+        private readonly ServiceRegistry _services;
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
-        public MainGame()
+        /// <summary>Application services prepared by <c>Program</c>.</summary>
+        protected ServiceRegistry EngineServices => _services;
+
+        public MainGame(ServiceRegistry services)
         {
+            _services = services ?? throw new ArgumentNullException(nameof(services));
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
@@ -18,24 +27,20 @@ namespace Template
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-
             base.Initialize();
         }
 
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            // TODO: use this.Content to load your game content here
         }
 
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+            if (Keyboard.GetState().IsKeyDown(Keys.Escape))
+            {
                 Exit();
-
-            // TODO: Add your update logic here
+            }
 
             base.Update(gameTime);
         }
@@ -43,8 +48,6 @@ namespace Template
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-
-            // TODO: Add your drawing code here
 
             base.Draw(gameTime);
         }

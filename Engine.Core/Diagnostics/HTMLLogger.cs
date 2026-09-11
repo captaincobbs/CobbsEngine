@@ -6,11 +6,9 @@ namespace Engine.Core.Diagnostics
 {
     public class HTMLLogger : ILogger
     {
-        public int Priority => 1;
+        public int LoadingWeight => 1;
 
-        public int Weight => 1;
-
-        public void Initialize(IServiceProvider services)
+        public async Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken cancellation)
         {
 
         }

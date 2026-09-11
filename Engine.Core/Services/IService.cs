@@ -1,15 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Engine.Core.Services
+﻿namespace Engine.Core.Services
 {
     public interface IService
     {
-        int Priority { get; }
-        int Weight { get; }
-
-        void Initialize(IServiceProvider services);
+        Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken cancellation);
 
         void Shutdown();
     }
