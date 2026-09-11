@@ -203,32 +203,42 @@ namespace Engine.Core.Services
                 _lifecycleState = LifecycleState.ShuttingDown;
             }
 
+            List<Exception> exceptions;
             try
             {
-                ShutdownInitializedServices();
+                exceptions = ShutdownInitializedServices();
             }
             finally
             {
                 SetState(LifecycleState.Shutdown);
             }
+
+            if (exceptions.Count > 0)
+            {
+                throw new AggregateException("One or more services failed during shutdown.", exceptions);
+            }
         }
 
-        private void ShutdownInitializedServices()
+        private List<Exception> ShutdownInitializedServices()
         {
+            List<Exception> exceptions = [];
+
             for (int index = _initializationOrder.Count - 1; index >= 0; index--)
             {
                 try
                 {
                     _initializationOrder[index].Shutdown();
                 }
-                catch (Exception ex)
+                catch (Exception exception)
                 {
-                    Console.WriteLine(ex);
+                    exceptions.Add(exception);
                 }
             }
 
             _initializationOrder.Clear();
             _services.Clear();
+
+            return exceptions;
         }
 
         /// <summary>Gets an instance of the specified service type.</summary>

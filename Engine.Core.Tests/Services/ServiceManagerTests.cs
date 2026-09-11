@@ -6,8 +6,6 @@ using Engine.Core.Services.Attributes;
 
 using FluentAssertions;
 
-using static Engine.Core.Tests.Services.ServiceManagerTests;
-
 namespace Engine.Core.Tests.Services
 {
     public sealed class ServiceManagerTests
@@ -452,7 +450,9 @@ namespace Engine.Core.Tests.Services
 
             await manager.InitializeAsync(null, CancellationToken.None);
 
-            manager.Shutdown();
+            Action act = () => manager.Shutdown();
+
+            act.Should().Throw<AggregateException>();
 
             ShutdownFailureState.Events.Should().ContainInOrder(
                 "Bad.Shutdown",
