@@ -23,8 +23,4 @@
     <ProjectReference Include="..\Engine.Core\Engine.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Collections\" />
-  </ItemGroup>
-
 </Project>

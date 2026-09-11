@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 using Engine.Core.Collections;
@@ -13,6 +14,19 @@ namespace Engine.Core.Services
         private readonly ServiceRegistrar _registrar;
         private readonly ServiceEnvironment _environment;
 
+        private readonly object _stateLock = new();
+        private LifecycleState _lifecycleState = LifecycleState.NotStarted;
+        public LifecycleState State { 
+            get
+            {
+                lock (_stateLock)
+                {
+                    return _lifecycleState;
+                }
+            } 
+        }
+
+
         public ServiceManager(ServiceRegistrar registrar, ServiceEnvironment environment)
         {
             _registrar = registrar;
@@ -23,18 +37,61 @@ namespace Engine.Core.Services
         /// <param name="totalProgress">Optional argument to track the initialization progress of every service</param>
         public async Task InitializeAsync(IProgress<ServiceInitializationProgress>? progress, CancellationToken cancellation)
         {
-            Dictionary<Type, ServiceRegistrationInfo> selected = SelectServices();
-            DependencyGraph<ServiceRegistrationInfo> dependencyGraph = BuildDependencyGraph(selected);
-            List<List<ServiceRegistrationInfo>> tiers = dependencyGraph.CreateTiers();
+            BeginInitialization();
 
-            ServiceProgressTracker tracker = new(selected.Values, progress);
-            foreach (List<ServiceRegistrationInfo> tier in tiers)
+            try
             {
-                cancellation.ThrowIfCancellationRequested();
-                await InitializeTierAsync(tier, tracker, cancellation);
-            }
+                Dictionary<Type, ServiceRegistrationInfo> selected = SelectServices();
+                ValidateFailureBehaviors(selected.Values);
+                DependencyGraph<ServiceRegistrationInfo> dependencyGraph = BuildDependencyGraph(selected);
+                List<List<ServiceRegistrationInfo>> tiers = dependencyGraph.CreateTiers();
 
-            tracker.Complete();
+                ServiceProgressTracker tracker = new(selected.Values, progress);
+                foreach (List<ServiceRegistrationInfo> tier in tiers)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    await InitializeTierAsync(tier, tracker, cancellation);
+                }
+                cancellation.ThrowIfCancellationRequested();
+
+                tracker.Complete();
+                SetState(LifecycleState.Initialized);
+            }
+            catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+            {
+                SetState(LifecycleState.ShuttingDown);
+                ShutdownInitializedServices();
+                SetState(LifecycleState.Cancelled);
+                throw;
+            }
+            catch
+            {
+                SetState(LifecycleState.ShuttingDown);
+                ShutdownInitializedServices();
+                SetState(LifecycleState.Failed);
+                throw;
+            }
+        }
+
+        private void BeginInitialization()
+        {
+            lock (_stateLock)
+            {
+                if (_lifecycleState != LifecycleState.NotStarted)
+                {
+                    throw new InvalidOperationException($"Cannot initialize services while manager state is {_lifecycleState}.");
+                }
+
+                _lifecycleState = LifecycleState.Initializing;
+            }
+        }
+
+        private void SetState(LifecycleState state)
+        {
+            lock (_stateLock)
+            {
+                _lifecycleState = state;
+            }
         }
 
         private Dictionary<Type, ServiceRegistrationInfo> SelectServices()
@@ -94,7 +151,7 @@ namespace Engine.Core.Services
             {
                 await Task.WhenAll(pending.Select(item => item.Task));
 
-                foreach ((ServiceRegistrationInfo registration, IService service, _) in pending)
+                foreach ((ServiceRegistrationInfo registration, IService service, Task task) in pending)
                 {
                     _services.Add(registration.ServiceType, service);
                     _initializationOrder.Add(service);
@@ -111,7 +168,6 @@ namespace Engine.Core.Services
                     }
                 }
 
-                Shutdown();
                 throw;
             }
         }
@@ -131,6 +187,33 @@ namespace Engine.Core.Services
 
         /// <summary></summary>
         public void Shutdown()
+        {
+            lock (_stateLock)
+            {
+                if (_lifecycleState == LifecycleState.Shutdown || _lifecycleState == LifecycleState.NotStarted)
+                {
+                    return;
+                }
+
+                if (_lifecycleState == LifecycleState.Initializing)
+                {
+                    throw new InvalidOperationException("Cannot synchronously shut down while services are initializing.");
+                }
+
+                _lifecycleState = LifecycleState.ShuttingDown;
+            }
+
+            try
+            {
+                ShutdownInitializedServices();
+            }
+            finally
+            {
+                SetState(LifecycleState.Shutdown);
+            }
+        }
+
+        private void ShutdownInitializedServices()
         {
             for (int index = _initializationOrder.Count - 1; index >= 0; index--)
             {
@@ -213,6 +296,19 @@ namespace Engine.Core.Services
             }
 
             return highestPriorityCandidates[0];
+        }
+
+        private static void ValidateFailureBehaviors(IEnumerable<ServiceRegistrationInfo> selectedServices)
+        {
+            ServiceRegistrationInfo[] unsupported = [.. selectedServices.Where(service => service.FailureBehavior != ServiceFailureBehavior.StopInitialization)];
+
+            if (unsupported.Length == 0)
+            {
+                return;
+            }
+
+            string services = string.Join(", ", unsupported.Select(service => $"{service.ServiceType.Name} ({service.FailureBehavior})"));
+            throw new NotSupportedException($"Only {nameof(ServiceFailureBehavior.StopInitialization)} " + $"is supported during service initialization. Unsupported: {services}.");
         }
     }
 }

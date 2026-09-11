@@ -1,4 +1,4 @@
-name: Core Tests
+name: Engine.Core Tests
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v6
 
       - name: Set up .NET
@@ -20,11 +20,11 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Restore test dependencies
+      - name: Restore Dependencies
         run: dotnet restore Engine.Core.Tests/Engine.Core.Tests.csproj
 
-      - name: Build Core tests
+      - name: Build Engine.Core tests
         run: dotnet build Engine.Core.Tests/Engine.Core.Tests.csproj --no-restore --configuration Release
 
-      - name: Run Core tests
+      - name: Run Engine.Core tests
         run: dotnet test Engine.Core.Tests/Engine.Core.Tests.csproj --no-build --configuration Release --verbosity normal

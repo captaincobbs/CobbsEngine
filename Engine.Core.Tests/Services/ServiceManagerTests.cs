@@ -272,6 +272,195 @@ namespace Engine.Core.Tests.Services
             manager.TryGet<IRollbackFirstService>(out _).Should().BeFalse();
         }
 
+        [Theory]
+        [InlineData(ServiceFailureBehavior.ContinueInitialization)]
+        [InlineData(ServiceFailureBehavior.TryNextService)]
+        [InlineData(ServiceFailureBehavior.Retry)]
+        public async Task InitializeAsync_Rejects_Unsupported_Failure_Behavior(ServiceFailureBehavior failureBehavior)
+        {
+            UnsupportedBehaviorService.InstancesCreated = 0;
+
+            ServiceRegistrar registrar = new();
+
+            registrar.RegisterService(
+                typeof(IUnsupportedBehaviorService),
+                typeof(UnsupportedBehaviorService),
+                priority: 0,
+                loadingWeight: 1,
+                failureBehavior: failureBehavior);
+
+            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+
+            Func<Task> act = () => manager.InitializeAsync(
+                progress: null,
+                CancellationToken.None);
+
+            await act.Should().ThrowAsync<NotSupportedException>();
+
+            UnsupportedBehaviorService.InstancesCreated.Should().Be(0);
+        }
+
+        [Fact]
+        public async Task InitializeAsync_Sets_State_To_Initialized()
+        {
+            ServiceRegistrar registrar = new();
+            registrar.RegisterService(
+                typeof(IPriorityService),
+                typeof(LowPriorityService),
+                priority: 10,
+                loadingWeight: 1,
+                failureBehavior: ServiceFailureBehavior.StopInitialization);
+
+            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            await manager.InitializeAsync(null, CancellationToken.None);
+            manager.State.Should().Be(LifecycleState.Initialized);
+        }
+
+        [Fact]
+        public async Task InitializeAsync_Called_Twice_Throws()
+        {
+            ServiceRegistrar registrar = new();
+            registrar.RegisterService(
+                typeof(IPriorityService),
+                typeof(LowPriorityService),
+                priority: 10,
+                loadingWeight: 1,
+                failureBehavior: ServiceFailureBehavior.StopInitialization);
+
+            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            await manager.InitializeAsync(null, CancellationToken.None);
+            Func<Task> act = () => manager.InitializeAsync(null, CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*manager state is Initialized*");
+        }
+
+        [Fact]
+        public async Task Shutdown_Before_Initialization_Is_Safe()
+        {
+            ServiceRegistrar registrar = new();
+            registrar.RegisterService(
+                typeof(IPriorityService),
+                typeof(LowPriorityService),
+                priority: 10,
+                loadingWeight: 1,
+                failureBehavior: ServiceFailureBehavior.StopInitialization);
+
+            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            Func<Action> action = () => manager.Shutdown;
+            action.Should().NotThrow();
+        }
+
+        [Fact]
+        public async Task Shutdown_Twice_Only_Shuts_Each_Service_Down_Once()
+        {
+            ShutdownTrackingService.ShutdownCalls = 0;
+
+            ServiceRegistrar registrar = new();
+
+            registrar.RegisterService(
+                typeof(IShutdownTrackingService),
+                typeof(ShutdownTrackingService),
+                priority: 0,
+                loadingWeight: 1,
+                failureBehavior: ServiceFailureBehavior.StopInitialization);
+
+            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+
+            await manager.InitializeAsync(null, CancellationToken.None);
+
+            manager.Shutdown();
+            manager.Shutdown();
+
+            ShutdownTrackingService.ShutdownCalls.Should().Be(1);
+            manager.State.Should().Be(LifecycleState.Shutdown);
+        }
+
+        [Fact]
+        public async Task Failed_Initialization_Sets_State_To_Failed()
+        {
+            ServiceRegistrar registrar = new();
+
+            registrar.RegisterService(
+                typeof(IFailingService),
+                typeof(FailingService),
+                priority: 0,
+                loadingWeight: 1,
+                failureBehavior: ServiceFailureBehavior.StopInitialization);
+
+            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+
+            Func<Task> act = () => manager.InitializeAsync(null, CancellationToken.None);
+
+            await act.Should().ThrowAsync<InvalidOperationException>();
+
+            manager.State.Should().Be(LifecycleState.Failed);
+        }
+
+        [Fact]
+        public async Task Cancelled_Initialization_Sets_State_To_Cancelled()
+        {
+            CancellationTestService.Reset();
+
+            ServiceRegistrar registrar = new();
+
+            registrar.RegisterService(
+                typeof(ICancellationTestService),
+                typeof(CancellationTestService),
+                priority: 0,
+                loadingWeight: 1,
+                failureBehavior: ServiceFailureBehavior.StopInitialization);
+
+            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+
+            using CancellationTokenSource cancellation = new();
+
+            Task initialization = manager.InitializeAsync(null, cancellation.Token);
+
+            await CancellationTestService.Started.Task.WaitAsync(TimeSpan.FromSeconds(1));
+
+            cancellation.Cancel();
+
+            Func<Task> act = () => initialization;
+
+            await act.Should().ThrowAsync<OperationCanceledException>();
+
+            manager.State.Should().Be(LifecycleState.Cancelled);
+        }
+
+        [Fact]
+        public async Task Shutdown_Continues_When_A_Service_Shutdown_Throws()
+        {
+            ShutdownFailureState.Events.Clear();
+
+            ServiceRegistrar registrar = new();
+
+            registrar.RegisterService(
+                typeof(IGoodShutdownService),
+                typeof(GoodShutdownService),
+                priority: 0,
+                loadingWeight: 1,
+                failureBehavior: ServiceFailureBehavior.StopInitialization);
+
+            registrar.RegisterService(
+                typeof(IBadShutdownService),
+                typeof(BadShutdownService),
+                priority: 0,
+                loadingWeight: 1,
+                failureBehavior: ServiceFailureBehavior.StopInitialization);
+
+            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+
+            await manager.InitializeAsync(null, CancellationToken.None);
+
+            manager.Shutdown();
+
+            ShutdownFailureState.Events.Should().ContainInOrder(
+                "Bad.Shutdown",
+                "Good.Shutdown");
+
+            manager.State.Should().Be(LifecycleState.Shutdown);
+        }
+
         #region Helper Functions
         private static ServiceEnvironment CreateWindowedEnvironment()
         {
@@ -306,7 +495,12 @@ namespace Engine.Core.Tests.Services
         public interface ICycleServiceB : IService;
         public interface IRollbackFirstService : IService;
         public interface IRollbackFailingService : IService;
-
+        public interface IUnsupportedBehaviorService : IService;
+        public interface IShutdownTrackingService : IService;
+        public interface IFailingService : IService;
+        public interface ICancellationTestService : IService;
+        public interface IGoodShutdownService : IService;
+        public interface IBadShutdownService : IService;
         public sealed class FirstService : IFirstService
         {
             public async Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken cancellation)
@@ -466,6 +660,111 @@ namespace Engine.Core.Tests.Services
             }
 
             public void Shutdown() { }
+        }
+
+        public sealed class UnsupportedBehaviorService : IUnsupportedBehaviorService
+        {
+            public static int InstancesCreated { get; set; }
+
+            public UnsupportedBehaviorService() => InstancesCreated++;
+
+            public Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken _) => Task.CompletedTask;
+
+            public void Shutdown() { }
+        }
+
+        public sealed class ShutdownTrackingService : IShutdownTrackingService
+        {
+            public static int ShutdownCalls { get; set; }
+
+            public Task InitializeAsync(
+                IServiceProvider services,
+                IProgress<float> progress,
+                CancellationToken cancellation)
+            {
+                progress.Report(1f);
+                return Task.CompletedTask;
+            }
+
+            public void Shutdown()
+            {
+                ShutdownCalls++;
+            }
+        }
+
+        public sealed class FailingService : IFailingService
+        {
+            public Task InitializeAsync(
+                IServiceProvider services,
+                IProgress<float> progress,
+                CancellationToken cancellation)
+            {
+                throw new InvalidOperationException("Expected test failure.");
+            }
+
+            public void Shutdown() { }
+        }
+
+        public sealed class CancellationTestService : ICancellationTestService
+        {
+            public static TaskCompletionSource Started { get; private set; } = null!;
+
+            public static void Reset()
+            {
+                Started = new TaskCompletionSource(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+
+            public async Task InitializeAsync(
+                IServiceProvider services,
+                IProgress<float> progress,
+                CancellationToken cancellation)
+            {
+                Started.TrySetResult();
+
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellation);
+            }
+
+            public void Shutdown() { }
+        }
+
+        public sealed class GoodShutdownService : IGoodShutdownService
+        {
+            public Task InitializeAsync(
+                IServiceProvider services,
+                IProgress<float> progress,
+                CancellationToken cancellation)
+            {
+                return Task.CompletedTask;
+            }
+
+            public void Shutdown()
+            {
+                ShutdownFailureState.Events.Add("Good.Shutdown");
+            }
+        }
+
+        [DependsOn(typeof(IGoodShutdownService))]
+        public sealed class BadShutdownService : IBadShutdownService
+        {
+            public Task InitializeAsync(
+                IServiceProvider services,
+                IProgress<float> progress,
+                CancellationToken cancellation)
+            {
+                return Task.CompletedTask;
+            }
+
+            public void Shutdown()
+            {
+                ShutdownFailureState.Events.Add("Bad.Shutdown");
+                throw new InvalidOperationException("Expected shutdown failure.");
+            }
+        }
+
+        private static class ShutdownFailureState
+        {
+            public static List<string> Events { get; } = [];
         }
 
         private static class RollbackState

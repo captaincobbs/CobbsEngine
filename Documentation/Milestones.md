@@ -28,10 +28,10 @@ A private, reusable MonoGame-based framework intended primarily for 2D games suc
 - [x] Create `Engine.Runtime`
 - [x] Create `Game` / template project
 - [x] Create test projects
-- [ ] Establish project references/dependency direction
-- [ ] Establish naming conventions
-- [ ] Establish nullable reference type / warning policy
-- [ ] Establish coding/style conventions
+- [x] Establish project references/dependency direction
+- [x] Establish naming conventions
+- [x] Establish nullable reference type / warning policy
+- [x] Establish coding/style conventions
 
 ## MonoGame Bootstrap
 
