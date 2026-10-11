@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Text;
-
-using Engine.Core.Collections;
+﻿using Engine.Core.Collections;
 
 namespace Engine.Core.Services
 {
@@ -34,7 +29,7 @@ namespace Engine.Core.Services
         }
 
         /// <summary>Chooses the most appropriate services based on their attributes, sorts them into dependency tiers, then initializes them.</summary>
-        /// <param name="totalProgress">Optional argument to track the initialization progress of every service</param>
+        /// <param name="progress">Optional argument to track the initialization progress of every service</param>
         public async Task InitializeAsync(IProgress<ServiceInitializationProgress>? progress, CancellationToken cancellation)
         {
             BeginInitialization();
@@ -118,7 +113,7 @@ namespace Engine.Core.Services
                 {
                     if (!selected.TryGetValue(dependencyType, out ServiceRegistrationInfo? dependency))
                     {
-                        throw new InvalidOperationException($"{registration.ServiceType.Name} requires " + $"{dependencyType.Name}, but no compatible service was selected.");
+                        throw new InvalidOperationException($"{registration.ServiceType.Name} requires {dependencyType.Name}, but no compatible service was selected.");
                     }
 
                     graph.AddDependency(registration, dependency);
@@ -151,7 +146,7 @@ namespace Engine.Core.Services
             {
                 await Task.WhenAll(pending.Select(item => item.Task));
 
-                foreach ((ServiceRegistrationInfo registration, IService service, Task task) in pending)
+                foreach ((ServiceRegistrationInfo registration, IService service, Task _) in pending)
                 {
                     _services.Add(registration.ServiceType, service);
                     _initializationOrder.Add(service);
@@ -180,7 +175,7 @@ namespace Engine.Core.Services
             }
             catch
             {
-                cancellationSource.Cancel();
+                await cancellationSource.CancelAsync();
                 throw;
             }
         }
@@ -318,7 +313,7 @@ namespace Engine.Core.Services
             }
 
             string services = string.Join(", ", unsupported.Select(service => $"{service.ServiceType.Name} ({service.FailureBehavior})"));
-            throw new NotSupportedException($"Only {nameof(ServiceFailureBehavior.StopInitialization)} " + $"is supported during service initialization. Unsupported: {services}.");
+            throw new NotSupportedException($"Only {nameof(ServiceFailureBehavior.StopInitialization)} is supported during service initialization. Unsupported: {services}.");
         }
     }
 }

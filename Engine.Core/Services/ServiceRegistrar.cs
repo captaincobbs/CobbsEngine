@@ -135,6 +135,9 @@ namespace Engine.Core.Services
             services.Add(registration);
         }
 
+        /// <summary>Unlinks the input assembly from the game, throws if input assembly is a core assembly</summary>
+        /// <param name="assembly"></param>
+        /// <exception cref="InvalidOperationException">Thrown if input assembly is a core assembly</exception>
         public void RemoveAssembly(Assembly assembly)
         {
             ArgumentNullException.ThrowIfNull(assembly);
@@ -147,6 +150,9 @@ namespace Engine.Core.Services
             _scannedAssemblies.Remove(assembly);
         }
 
+        /// <summary>Returns a collection containing the registration info of all registered services that implement the input type</summary>
+        /// <param name="serviceType"></param>
+        /// <returns></returns>
         public IReadOnlyList<ServiceRegistrationInfo> GetRegisteredServices(Type serviceType)
         {
             ArgumentNullException.ThrowIfNull(serviceType);
