@@ -1,12 +1,15 @@
-﻿namespace Engine.Core.Diagnostics
+﻿namespace Engine.Core
 {
-    public enum MessageType
+    public static partial class Diagnostics
     {
-        Message,
-        Warning,
-        Error,
-        Exception,
-        Debug,
-        Assert,
+        public enum MessageType
+        {
+            Message =   1 << 0,
+            Warning =   1 << 1,
+            Error =     1 << 2,
+            Exception = 1 << 3,
+            Debug =     1 << 4,
+            Assert =    1 << 5,
+        }
     }
 }

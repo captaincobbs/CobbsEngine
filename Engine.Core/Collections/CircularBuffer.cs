@@ -86,5 +86,31 @@ namespace Engine.Core.Collections
         {
             return GetEnumerator();
         }
+
+        public T[] DrainToArray()
+        {
+            T[] result = new T[Count];
+
+            for (int index = 0; index < Count; index++)
+            {
+                result[index] = this[index];
+            }
+
+            Clear();
+
+            return result;
+        }
+
+        public void DrainTo(ref ICollection<T> output)
+        {
+            ArgumentNullException.ThrowIfNull(output, nameof(output));
+
+            foreach (T item in this)
+            {
+                output.Add(item);
+            }
+
+            Clear();
+        }
     }
 }

@@ -1,68 +1,115 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Engine.Core.Services.Attributes;
 
-namespace Engine.Core.Diagnostics
+namespace Engine.Core
 {
-    public class CompositeLogger : ILogger
+    public static partial class Diagnostics
     {
-        private readonly List<ILogger> _loggers = [];
-
-        public int LoadingWeight => 1;
-
-        public async Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken cancellation)
+        [RegisterService(typeof(ILogger))]
+        internal class CompositeLogger : ILogger
         {
-        }
+            private readonly List<ILogger> _loggers = [];
 
-        public void Shutdown()
-        {
-        }
-
-        public void Message(string message, string source)
-        {
-            foreach (ILogger logger in _loggers)
+            internal CompositeLogger(params ILogger[] loggers)
             {
-                logger.Message(message, source);
+                _loggers.AddRange(loggers);
             }
-        }
 
-        public void Warning(string message, string source)
-        {
-            foreach (ILogger logger in _loggers)
+            public async Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken cancellation)
             {
-                logger.Warning(message, source);
+                IEnumerable<Task> initializeTasks = _loggers.Select(logger => logger.InitializeAsync(services, progress, cancellation));
+                await Task.WhenAll(initializeTasks);
+
+                progress.Report(1f);
             }
-        }
 
-        public void Error(string message, string source)
-        {
-            foreach (ILogger logger in _loggers)
+            public void Shutdown()
             {
-                logger.Error(message, source);
+                foreach (ILogger logger in _loggers)
+                {
+                    logger.Shutdown();
+                }
             }
-        }
 
-        public void Exception(Exception ex, string message, string source)
-        {
-            foreach (ILogger logger in _loggers)
+            public void Message(string message, string source)
             {
-                logger.Exception(ex, message, source);
+                LogMessage log = new(message, MessageType.Message, source);
+                foreach (ILogger logger in _loggers)
+                {
+                    logger.Log(log);
+                }
             }
-        }
 
-        public void Debug(string message, string source)
-        {
-            foreach (ILogger logger in _loggers)
+            public void Warning(string message, string source)
             {
-                logger.Debug(message, source);
+                LogMessage log = new(message, MessageType.Warning, source);
+                foreach (ILogger logger in _loggers)
+                {
+                    logger.Log(log);
+                }
             }
-        }
 
-        public void Assert(bool condition, string message, string source)
-        {
-            foreach (ILogger logger in _loggers)
+            public void Error(string message, string source)
             {
-                logger.Assert(condition, message, source);
+                LogMessage log = new(message, MessageType.Error, source);
+                foreach (ILogger logger in _loggers)
+                {
+                    logger.Log(log);
+                }
+            }
+
+            public void Exception(Exception ex, string message, string source)
+            {
+                LogMessage log = new(message, MessageType.Exception, source, ex);
+                foreach (ILogger logger in _loggers)
+                {
+                    logger.Log(log);
+                }
+            }
+
+            public void Debug(string message, string source)
+            {
+                LogMessage log = new(message, MessageType.Debug, source);
+                foreach (ILogger logger in _loggers)
+                {
+                    logger.Log(log);
+                }
+            }
+
+            public void Assert(bool condition, string message, string source)
+            {
+                if (!condition)
+                {
+                    LogMessage log = new(message, MessageType.Assert, source);
+                    foreach (ILogger logger in _loggers)
+                    {
+                        logger.Log(log);
+                    }
+                }
+            }
+
+            public void Assert(Action function, string message, string source)
+            {
+                try
+                {
+                    function();
+
+                }
+                catch (Exception ex)
+                {
+                    LogMessage log = new(message, MessageType.Assert, source, ex);
+                    foreach (ILogger logger in _loggers)
+                    {
+                        logger.Log(log);
+                    }
+                }
+            }
+
+            public void Log(LogMessage log, bool isBufferedReplay = false)
+            {
+                foreach (ILogger logger in _loggers)
+                {
+                    logger.Log(log, isBufferedReplay);
+                }
             }
         }
     }
