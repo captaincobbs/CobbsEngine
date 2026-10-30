@@ -120,51 +120,11 @@ namespace Engine.Core
                 }
             }
 
-            public void Message(string message, string source) => CreateMessage(message, MessageType.Message, source);
-
-            public void Warning(string message, string source) => CreateMessage(message, MessageType.Warning, source);
-
-            public void Error(string message, string source) => CreateMessage(message, MessageType.Error, source);
-
-            public void Exception(Exception ex, string message, string source) => CreateMessage(message, MessageType.Exception, source, ex);
-
-            public void Debug(string message, string source) => CreateMessage(message, MessageType.Debug, source);
-
-            public void Assert(bool condition, string message, string source)
-            {
-                if (!condition)
-                {
-                    CreateMessage(message, MessageType.Assert, source);
-                }
-            }
-
-            public void Assert(Action function, string message, string source)
-            {
-                try
-                {
-                    function();
-                }
-                catch (Exception ex)
-                {
-                    CreateMessage(message, MessageType.Assert, source, ex);
-                }
-            }
-
             public void Log(LogMessage log, bool _ = false)
             {
                 if (!_channel.Writer.TryWrite(log))
                 {
                     Console.Error.WriteLine($"[HTMLLogger] Dropped log after shutdown: {log.Message}");
-                }
-            }
-
-            private void CreateMessage(string message, MessageType type, string source, Exception? ex = null)
-            {
-                LogMessage log = new(message, type, source, ex);
-
-                if (!_channel.Writer.TryWrite(log))
-                {
-                    Console.Error.WriteLine($"[HTMLLogger] Dropped log after shutdown: {message}");
                 }
             }
 

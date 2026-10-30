@@ -2,7 +2,11 @@
 {
     public interface IService
     {
-        Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken cancellation);
+        virtual Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken cancellation)
+        {
+            progress?.Report(1f);
+            return Task.CompletedTask;
+        }
 
         virtual void Shutdown() { }
     }
