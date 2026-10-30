@@ -462,10 +462,9 @@ namespace Engine.Core.Tests.Services
         }
 
         #region Helper Functions
-        private static ServiceEnvironment CreateWindowedEnvironment()
+        private static EngineRuntime CreateWindowedEnvironment()
         {
-            return new ServiceEnvironment(
-                new Version(1, 0),
+            return new EngineRuntime(
                 RuntimePlatform.Windows,
                 ApplicationMode.Windowed,
                 GraphicsAPI.OpenGL);
@@ -512,8 +511,6 @@ namespace Engine.Core.Tests.Services
 
                 progress.Report(1f);
             }
-
-            public void Shutdown() { }
         }
 
         public sealed class SecondService : ISecondService
@@ -527,8 +524,6 @@ namespace Engine.Core.Tests.Services
 
                 progress.Report(1f);
             }
-
-            public void Shutdown() { }
         }
 
         [DependsOn(typeof(IFirstService))]
@@ -545,33 +540,17 @@ namespace Engine.Core.Tests.Services
 
                 return Task.CompletedTask;
             }
-
-            public void Shutdown() { }
         }
 
-        public sealed class LowPriorityService : IPriorityService
-        {
-            public Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken _) => Task.CompletedTask;
+        public sealed class LowPriorityService : IPriorityService { }
 
-            public void Shutdown() { }
-        }
-
-        public sealed class HighPriorityService : IPriorityService
-        {
-            public Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken _) => Task.CompletedTask;
-
-            public void Shutdown() { }
-        }
+        public sealed class HighPriorityService : IPriorityService { }
 
         public sealed class TieServiceA : ITieService
         {
             public static int InstancesCreated { get; set; }
 
             public TieServiceA() => InstancesCreated++;
-
-            public Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken _) => Task.CompletedTask;
-
-            public void Shutdown() { }
         }
 
         public sealed class TieServiceB : ITieService
@@ -579,26 +558,12 @@ namespace Engine.Core.Tests.Services
             public static int InstancesCreated { get; set; }
 
             public TieServiceB() => InstancesCreated++;
-
-            public Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken _) => Task.CompletedTask;
-
-            public void Shutdown() { }
         }
 
         [RuntimePlatform(RuntimePlatform.Linux)]
-        public sealed class LinuxOnlyService : IPlatformService
-        {
-            public Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken _) => Task.CompletedTask;
+        public sealed class LinuxOnlyService : IPlatformService { }
 
-            public void Shutdown() { }
-        }
-
-        public sealed class CrossPlatformService : IPlatformService
-        {
-            public Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken _) => Task.CompletedTask;
-
-            public void Shutdown() { }
-        }
+        public sealed class CrossPlatformService : IPlatformService { }
 
         [DependsOn(typeof(IUnregisteredService))]
         public sealed class MissingDependencyService : IMissingDependencyService
@@ -606,10 +571,6 @@ namespace Engine.Core.Tests.Services
             public static int InstancesCreated { get; set; }
 
             public MissingDependencyService() => InstancesCreated++;
-
-            public Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken _) => Task.CompletedTask;
-
-            public void Shutdown() { }
         }
 
         [DependsOn(typeof(ICycleServiceB))]
@@ -618,10 +579,6 @@ namespace Engine.Core.Tests.Services
             public static int InstancesCreated { get; set; }
 
             public CycleServiceA() => InstancesCreated++;
-
-            public Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken _) => Task.CompletedTask;
-
-            public void Shutdown() { }
         }
 
         [DependsOn(typeof(ICycleServiceA))]
@@ -630,10 +587,6 @@ namespace Engine.Core.Tests.Services
             public static int InstancesCreated { get; set; }
 
             public CycleServiceB() => InstancesCreated++;
-
-            public Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken _) => Task.CompletedTask;
-
-            public void Shutdown() { }
         }
 
         public sealed class RollbackFirstService : IRollbackFirstService
@@ -658,8 +611,6 @@ namespace Engine.Core.Tests.Services
                 RollbackState.Events.Add("Failing.Initialize");
                 throw new InvalidOperationException("Expected test failure.");
             }
-
-            public void Shutdown() { }
         }
 
         public sealed class UnsupportedBehaviorService : IUnsupportedBehaviorService
@@ -667,24 +618,11 @@ namespace Engine.Core.Tests.Services
             public static int InstancesCreated { get; set; }
 
             public UnsupportedBehaviorService() => InstancesCreated++;
-
-            public Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken _) => Task.CompletedTask;
-
-            public void Shutdown() { }
         }
 
         public sealed class ShutdownTrackingService : IShutdownTrackingService
         {
             public static int ShutdownCalls { get; set; }
-
-            public Task InitializeAsync(
-                IServiceProvider services,
-                IProgress<float> progress,
-                CancellationToken cancellation)
-            {
-                progress.Report(1f);
-                return Task.CompletedTask;
-            }
 
             public void Shutdown()
             {
@@ -701,8 +639,6 @@ namespace Engine.Core.Tests.Services
             {
                 throw new InvalidOperationException("Expected test failure.");
             }
-
-            public void Shutdown() { }
         }
 
         public sealed class CancellationTestService : ICancellationTestService
@@ -711,33 +647,19 @@ namespace Engine.Core.Tests.Services
 
             public static void Reset()
             {
-                Started = new TaskCompletionSource(
-                    TaskCreationOptions.RunContinuationsAsynchronously);
+                Started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             }
 
-            public async Task InitializeAsync(
-                IServiceProvider services,
-                IProgress<float> progress,
-                CancellationToken cancellation)
+            public async Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken cancellation)
             {
                 Started.TrySetResult();
 
                 await Task.Delay(Timeout.InfiniteTimeSpan, cancellation);
             }
-
-            public void Shutdown() { }
         }
 
         public sealed class GoodShutdownService : IGoodShutdownService
         {
-            public Task InitializeAsync(
-                IServiceProvider services,
-                IProgress<float> progress,
-                CancellationToken cancellation)
-            {
-                return Task.CompletedTask;
-            }
-
             public void Shutdown()
             {
                 ShutdownFailureState.Events.Add("Good.Shutdown");
@@ -747,14 +669,6 @@ namespace Engine.Core.Tests.Services
         [DependsOn(typeof(IGoodShutdownService))]
         public sealed class BadShutdownService : IBadShutdownService
         {
-            public Task InitializeAsync(
-                IServiceProvider services,
-                IProgress<float> progress,
-                CancellationToken cancellation)
-            {
-                return Task.CompletedTask;
-            }
-
             public void Shutdown()
             {
                 ShutdownFailureState.Events.Add("Bad.Shutdown");

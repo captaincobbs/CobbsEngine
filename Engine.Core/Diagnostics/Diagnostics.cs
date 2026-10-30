@@ -91,6 +91,27 @@ namespace Engine.Core
             }
         }
 
+#if DEBUG
+        /// <summary>Only used for testing</summary>
+        internal static void Reset()
+        {
+            lock (_lock)
+            {
+                _logger = null;
+                _buffer.Clear();
+                _state = DiagnosticsState.Buffering;
+
+                MirroredTypes.Clear();
+                MirroredTypes.UnionWith(
+                [
+                    MessageType.Warning,
+                    MessageType.Error,
+                    MessageType.Exception,
+                ]);
+            }
+        }
+#endif
+
         public static void Message(string message, string source) => Submit(new LogMessage(message, MessageType.Message, source));
 
         public static void Warning(string message, string source) => Submit(new LogMessage(message, MessageType.Warning, source));
