@@ -1,17 +1,16 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 using Engine.Core.Collections;
 
 namespace Engine.Core
 {
-
     public static partial class Diagnostics
     {
         private static readonly object _lock = new();
         private static readonly CircularBuffer<LogMessage> _buffer = new(1000);
 
-        // Determines which types are mirrored to the console while buffering
-        private static HashSet<MessageType> MirroredTypes = [
+        private static readonly HashSet<MessageType> MirroredTypes =
+        [
             MessageType.Warning,
             MessageType.Error,
             MessageType.Exception,
@@ -26,7 +25,7 @@ namespace Engine.Core
             {
                 lock (_lock)
                 {
-                    return _state == DiagnosticsState.Buffering;
+                    return _state == DiagnosticsState.Active;
                 }
             }
         }
@@ -45,14 +44,13 @@ namespace Engine.Core
         internal static void Configure(DiagnosticsOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
-
             MessageType[] mirroredTypes = [.. options.MirroredTypes];
 
             lock (_lock)
             {
                 if (_state != DiagnosticsState.Buffering)
                 {
-                    throw new InvalidOperationException("[Diagnostics] Can only call Configure() before initialization!");
+                    throw new InvalidOperationException("[Diagnostics] Can only call Configure() before initialization.");
                 }
 
                 MirroredTypes.Clear();
@@ -72,11 +70,11 @@ namespace Engine.Core
             {
                 if (_state != DiagnosticsState.Buffering)
                 {
-                    throw new InvalidOperationException($"[Diagnostics] Cannot initialize while in {_state}");
+                    throw new InvalidOperationException($"[Diagnostics] Cannot initialize while in {_state}.");
                 }
 
                 _logger = logger;
-                _state = DiagnosticsState.Active;
+                _state = DiagnosticsState.Flushing;
             }
 
             Flush(logger);
@@ -132,9 +130,11 @@ namespace Engine.Core
 
         public static void Assert(Action function, string message, string source)
         {
+            ArgumentNullException.ThrowIfNull(function);
+
             try
             {
-                function.Invoke();
+                function();
             }
             catch (Exception ex)
             {
@@ -145,6 +145,7 @@ namespace Engine.Core
         public static void Time(Action action, string functionName)
         {
             ArgumentNullException.ThrowIfNull(action);
+
             Stopwatch watch = Stopwatch.StartNew();
 
             try
@@ -153,7 +154,7 @@ namespace Engine.Core
             }
             catch (Exception ex)
             {
-                Exception(ex, $"Uncaught Exception when timing '{functionName}'", nameof(Diagnostics));
+                Exception(ex, $"Uncaught exception when timing '{functionName}'.", nameof(Diagnostics));
                 return;
             }
             finally
@@ -161,7 +162,7 @@ namespace Engine.Core
                 watch.Stop();
             }
 
-            Debug($"{functionName} took {watch.ElapsedMilliseconds}", "Diagnostics");
+            Debug($"{functionName} took {watch.ElapsedMilliseconds} ms.", nameof(Diagnostics));
         }
 
         private static void Submit(LogMessage message)
@@ -178,6 +179,7 @@ namespace Engine.Core
                 else
                 {
                     _buffer.Add(message);
+                    mirrorToConsole = MirroredTypes.Contains(message.Type);
                 }
             }
 
