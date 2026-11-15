@@ -95,7 +95,7 @@ namespace Engine.Core
                 catch (Exception ex)
                 {
                     _channel.Writer.TryComplete(ex);
-                    System.Console.Error.WriteLine($"[HTMLLogger] Background writer failed: {ex}");
+                    Console.Error.WriteLine($"[HTMLLogger] Background writer failed: {ex}");
                     throw;
                 }
             }
@@ -124,7 +124,7 @@ namespace Engine.Core
             {
                 if (!_channel.Writer.TryWrite(log))
                 {
-                    System.Console.Error.WriteLine($"[HTMLLogger] Dropped log after shutdown: {log.Message}");
+                    Console.Error.WriteLine($"[HTMLLogger] Dropped log after shutdown: {log.Message}");
                 }
             }
 

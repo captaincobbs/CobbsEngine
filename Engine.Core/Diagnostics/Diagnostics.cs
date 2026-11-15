@@ -267,7 +267,7 @@ namespace Engine.Core
                 output += Environment.NewLine + message.Exception;
             }
 
-            System.Console.Error.WriteLine(output);
+            Console.Error.WriteLine(output);
         }
 
         private enum DiagnosticsState

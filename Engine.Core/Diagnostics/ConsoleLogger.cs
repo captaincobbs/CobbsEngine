@@ -25,7 +25,7 @@ namespace Engine.Core
                 {
                     output += Environment.NewLine + log.Exception;
                 }
-                System.Console.WriteLine(output);
+                Console.WriteLine(output);
             }
         }
     }

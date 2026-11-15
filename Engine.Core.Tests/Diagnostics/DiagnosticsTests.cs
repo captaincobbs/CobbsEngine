@@ -65,17 +65,17 @@ public sealed class DiagnosticsTests : IDisposable
         CoreDiagnostics.Configure(options, Path.GetTempPath());
 
         StringWriter consoleOutput = new();
-        TextWriter originalError = System.Console.Error;
+        TextWriter originalError = Console.Error;
 
         try
         {
-            System.Console.SetError(consoleOutput);
+            Console.SetError(consoleOutput);
 
             CoreDiagnostics.Warning("boot warning", "test");
         }
         finally
         {
-            System.Console.SetError(originalError);
+            Console.SetError(originalError);
         }
 
         RecordingLogger logger = new();

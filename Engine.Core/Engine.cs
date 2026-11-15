@@ -20,7 +20,7 @@ namespace Engine.Core
 
         public static EngineHost CreateHost(string[] args, AssemblyMetadata metadata, EngineRuntime runtime)
         {
-            LaunchArgumentParseResult launchArguments = LaunchArgumentHandler.Parse(args);
+            LaunchArgumentParseResult launchArguments = Parse(args);
             FilePaths paths = FilePaths.FromMetadata(metadata);
 
             if (launchArguments.HasErrors)
