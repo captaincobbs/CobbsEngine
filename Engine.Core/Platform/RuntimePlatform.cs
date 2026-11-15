@@ -16,8 +16,8 @@ namespace Engine.Core.Platform
         WebGL       = 1 << 5,
         XBox        = 1 << 6,
         PlayStation = 1 << 7,
-        Switch      = 1 << 8,
+        NintendoSwitch      = 1 << 8,
 
-        All = Windows | Linux | MacOS | Android | iOS | WebGL | XBox | PlayStation | Switch
+        All = Windows | Linux | MacOS | Android | iOS | WebGL | XBox | PlayStation | NintendoSwitch
     }
 }
