@@ -1,5 +1,3 @@
-# Service Architecture
-
 ## Scope
 
 Services provide engine-wide capabilities such as logging, assets, audio, input, graphics, and scheduling. They are not a substitute for ordinary game objects or a general-purpose ECS.
