@@ -1,6 +1,4 @@
-﻿using System;
-
-using Engine.Core;
+﻿using Engine.Core;
 using Engine.MonoGame;
 using Engine.Runtime;
 

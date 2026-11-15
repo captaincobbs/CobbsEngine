@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-using Engine.Core.Platform;
+﻿using Engine.Core.Platform;
 
 namespace Engine.Core.Services.Attributes
 {

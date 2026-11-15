@@ -1,6 +1,4 @@
-﻿using System;
-
-using Engine.Core.Settings;
+﻿using Engine.Core.Settings;
 
 namespace Engine.MonoGame.Settings
 {

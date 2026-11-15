@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Engine.Core.Settings
+﻿namespace Engine.Core.Settings
 {
     public sealed record SettingsIssue(
         string? Key,
