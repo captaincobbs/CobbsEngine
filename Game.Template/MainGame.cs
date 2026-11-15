@@ -1,6 +1,8 @@
 ﻿using System;
 
-using Engine.Core.Services;
+using Engine.Core;
+using Engine.MonoGame;
+using Engine.Runtime;
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -8,19 +10,12 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Template
 {
-    public class MainGame : Game
+    public class MainGame : EngineGame
     {
-        private readonly ServiceRegistry _services;
-        private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
-        /// <summary>Application services prepared by <c>Program</c>.</summary>
-        protected ServiceRegistry EngineServices => _services;
-
-        public MainGame(ServiceRegistry services)
+        public MainGame(EngineHost host, GameRuntime runtime) : base(host, runtime)
         {
-            _services = services ?? throw new ArgumentNullException(nameof(services));
-            _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
         }
