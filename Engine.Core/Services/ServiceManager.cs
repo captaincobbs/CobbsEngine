@@ -7,9 +7,8 @@ namespace Engine.Core.Services
         private readonly Dictionary<Type, IService> _services = [];
         private readonly List<IService> _initializationOrder = [];
         private readonly ServiceRegistrar _registrar;
-        private readonly ServiceEnvironment _environment;
 
-        private readonly object _stateLock = new();
+        private readonly Lock _stateLock = new();
         private LifecycleState _lifecycleState = LifecycleState.NotStarted;
         public LifecycleState State { 
             get
@@ -22,10 +21,9 @@ namespace Engine.Core.Services
         }
 
 
-        public ServiceManager(ServiceRegistrar registrar, ServiceEnvironment environment)
+        public ServiceManager(ServiceRegistrar registrar)
         {
             _registrar = registrar;
-            _environment = environment;
         }
 
         /// <summary>Chooses the most appropriate services based on their attributes, sorts them into dependency tiers, then initializes them.</summary>
@@ -257,28 +255,28 @@ namespace Engine.Core.Services
             return service != null;
         }
 
-        private ServiceRegistrationInfo SelectService(Type serviceType, IReadOnlyList<ServiceRegistrationInfo> implementations)
+        private static ServiceRegistrationInfo SelectService(Type serviceType, IReadOnlyList<ServiceRegistrationInfo> implementations)
         {
             List<ServiceRegistrationInfo> candidates = [.. implementations];
 
             foreach (ServiceRegistrationInfo registration in implementations)
             {
                 // If Application not in required mode, remove from candidacy
-                if ((_environment.ApplicationMode & registration.ApplicationMode) == 0)
+                if ((EngineEnvironment.ApplicationMode & registration.ApplicationMode) == 0)
                 {
                     candidates.Remove(registration);
                     continue;
                 }
 
                 // If not using the required RuntimePlatform, remove from candidacy
-                if ((_environment.Platform & registration.TargetPlatforms) == 0)
+                if ((EngineEnvironment.RuntimePlatform & registration.TargetPlatforms) == 0)
                 {
                     candidates.Remove(registration);
                     continue;
                 }
 
                 // If not using the required GraphicsAPI, remove from candidacy
-                if (registration.GraphicsBackend != null && _environment.GraphicsBackend != registration.GraphicsBackend)
+                if (registration.GraphicsAPI != null && EngineEnvironment.GraphicsAPI != registration.GraphicsAPI)
                 {
                     candidates.Remove(registration);
                     continue;

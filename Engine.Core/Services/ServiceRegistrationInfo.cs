@@ -17,7 +17,7 @@ namespace Engine.Core.Services
 
         public ApplicationMode ApplicationMode { get; }
         public RuntimePlatform TargetPlatforms { get; }
-        public GraphicsAPI? GraphicsBackend { get; }
+        public GraphicsAPI? GraphicsAPI { get; }
 
         public IReadOnlyList<Type> Dependencies { get; }
 
@@ -41,7 +41,7 @@ namespace Engine.Core.Services
             FailureBehavior = failureBehavior;
             ApplicationMode = applicationMode;
             TargetPlatforms = targetPlatforms;
-            GraphicsBackend = graphicsBackend;
+            GraphicsAPI = graphicsBackend;
             Dependencies = new List<Type>(dependencies);
         }
     }

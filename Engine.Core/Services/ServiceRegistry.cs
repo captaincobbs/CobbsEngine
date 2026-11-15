@@ -8,17 +8,15 @@ namespace Engine.Core.Services;
 /// </summary>
 public sealed class ServiceRegistry
 {
-    public ServiceEnvironment Environment { get; }
 
     /// <summary>Contains discovered registration metadata-- never constructs services.</summary>
     public ServiceRegistrar Registrar { get; }
     public ServiceManager ServiceManager { get; }
 
-    public ServiceRegistry(ServiceEnvironment environment)
+    public ServiceRegistry()
     {
-        Environment = environment;
         Registrar = new();
-        ServiceManager = new(Registrar, environment);
+        ServiceManager = new(Registrar);
     }
 
     public void ScanAssemblies(IEnumerable<Assembly> assemblies) => Registrar.ScanAssemblies(assemblies);
