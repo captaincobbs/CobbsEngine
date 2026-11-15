@@ -24,7 +24,7 @@ jobs:
         run: dotnet restore Engine.Core.Tests/Engine.Core.Tests.csproj
 
       - name: Build Engine.Core tests
-        run: dotnet build Engine.Core.Tests/Engine.Core.Tests.csproj --no-restore --configuration Debug
+        run: dotnet build Engine.Core.Tests/Engine.Core.Tests.csproj --no-restore --configuration Release
 
       - name: Run Engine.Core tests
-        run: dotnet test Engine.Core.Tests/Engine.Core.Tests.csproj --no-build --configuration Debug --verbosity normal
+        run: dotnet test Engine.Core.Tests/Engine.Core.Tests.csproj --no-build --configuration Release --verbosity normal

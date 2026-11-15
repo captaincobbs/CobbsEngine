@@ -6,7 +6,7 @@ A game engine written using MonoGame 3.8 and .NET 10. The goal is to do mostly e
 ## Goals
 The general goal is a usable game engine I can release a commercial product with. My general goals are to keep things scalable, cross platform, and well documented. This engine is largely intended for large 2D projects, and will likely not include an ECS simply because the kinds of games I want to make likely won't require them.
 Technical goals:
-- Robust modding system that supports loading game data, assets, and assemblies
+- Robust modding system that supports loading game data and assets
 - Basic multiplayer / state syncing
 - Keep everything multithreaded / async as needed to make the game / engine reasonably performant
 - Robust logging
