@@ -45,21 +45,21 @@ A private, reusable MonoGame-based framework intended primarily for 2D games suc
 
 ## Logging
 
-- [ ] Define `ILogger`
-- [ ] Define log levels
-- [ ] Console logger
-- [ ] File logger
-- [ ] Structured/contextual logging
-- [ ] Log framework startup/shutdown
-- [ ] Log unhandled exceptions
+- [x] Define `ILogger`
+- [x] Define log levels
+- [x] Console logger
+- [x] File logger
+- [x] Structured/contextual logging
+- [x] Log framework startup/shutdown
+- [x] Log unhandled exceptions
 
 ## Configuration
 
-- [ ] Define engine configuration model
-- [ ] Load configuration from file
-- [ ] Support defaults
-- [ ] Support environment/runtime overrides
-- [ ] Separate engine configuration from game configuration
+- [x] Define engine configuration model
+- [x] Load configuration from file
+- [x] Support defaults
+- [x] Support environment/runtime overrides
+- [x] Separate engine configuration from game configuration
 
 ---
 
