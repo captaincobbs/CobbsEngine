@@ -18,13 +18,13 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
-      - name: Restore Dependencies
+      - name: Restore dependencies
         run: dotnet restore Engine.Core.Tests/Engine.Core.Tests.csproj
 
-      - name: Build tests
-        run: dotnet build Engine.Core.Tests/Engine.Core.Tests.csproj --no-restore Debug
+      - name: Build Engine.Core tests
+        run: dotnet build Engine.Core.Tests/Engine.Core.Tests.csproj --no-restore --configuration Debug
 
-      - name: Run tests
-        run: dotnet test Engine.Core.Tests/Engine.Core.Tests.csproj --no-build Debug --verbosity normal
+      - name: Run Engine.Core tests
+        run: dotnet test Engine.Core.Tests/Engine.Core.Tests.csproj --no-build --configuration Debug --verbosity normal
