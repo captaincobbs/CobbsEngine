@@ -22,6 +22,14 @@ namespace Engine.Core
                 progress.Report(1f);
             }
 
+            public void Configure(DiagnosticsSettings options)
+            {
+                foreach (ILogger logger in _loggers)
+                {
+                    logger.Configure(options);
+                }
+            }
+
             public void Shutdown()
             {
                 foreach (ILogger logger in _loggers)

@@ -12,6 +12,7 @@
 
         SettingsUpdateResult<T> Update<T>(string key, Func<T, T> update) where T : class;
         Task<SettingsLoadResult> LoadAsync(CancellationToken cancellation = default);
+        Task<SettingsLoadResult> LoadAsync(IEnumerable<SettingsOverride> overrides, CancellationToken cancellation = default);
         Task<SettingsSaveResult> SaveAsync(CancellationToken cancellation = default);
         SettingsApplyReport AdvanceTo(SettingsApplyContext context);
         SettingsApplyReport Apply(SettingsApplyContext context);

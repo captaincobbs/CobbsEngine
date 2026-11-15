@@ -60,7 +60,7 @@ namespace Engine.MonoGame.Settings
 
         public override SettingsApplyResult Apply(DisplaySettings settings, SettingsApplyContext context)
         {
-            if (context.Phase is not SettingsApplyPhase.Host or SettingsApplyPhase.Runtime)
+            if (context.Phase is not SettingsApplyPhase.Host || context.Phase is not SettingsApplyPhase.Runtime)
             {
                 return new(SettingsApplyStatus.Deferred);
             }

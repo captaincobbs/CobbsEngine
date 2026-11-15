@@ -8,7 +8,7 @@ namespace Engine.Core
     {
         private static readonly object _lock = new();
         private static readonly CircularBuffer<LogMessage> _buffer = new(1000);
-        private static string? _diagnosticsFolderPath = null;
+        public static string? FolderPath = null;
 
         private static readonly HashSet<MessageType> MirroredTypes =
         [
@@ -42,11 +42,11 @@ namespace Engine.Core
             }
         }
 
-        internal static void Configure(DiagnosticsOptions options, string diagnosticsFolderPath)
+        internal static void Configure(DiagnosticsSettings options, string diagnosticsFolderPath)
         {
             ArgumentNullException.ThrowIfNull(options);
             MessageType[] mirroredTypes = [.. options.MirroredTypes];
-            _diagnosticsFolderPath = diagnosticsFolderPath;
+            FolderPath = diagnosticsFolderPath;
 
             lock (_lock)
             {

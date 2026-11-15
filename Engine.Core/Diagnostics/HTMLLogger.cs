@@ -215,7 +215,7 @@ namespace Engine.Core
 
             private static string GetFileName(string sessionId, int partNumber)
             {
-                return $"log_{sessionId}_part{partNumber:D3}.html";
+                return Path.Combine(FolderPath, $"log_{sessionId}_part{partNumber:D3}.html");
             }
         }
     }

@@ -19,5 +19,5 @@ public sealed class ServiceRegistry
         ServiceManager = new(Registrar);
     }
 
-    public void ScanAssemblies(IEnumerable<Assembly> assemblies) => Registrar.ScanAssemblies(assemblies);
+    internal void ScanAssemblies(IEnumerable<Assembly> assemblies) => Registrar.ScanAssemblies(assemblies);
 }

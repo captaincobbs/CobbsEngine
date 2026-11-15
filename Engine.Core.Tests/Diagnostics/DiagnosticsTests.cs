@@ -60,8 +60,8 @@ public sealed class DiagnosticsTests : IDisposable
     [Fact]
     public void Warning_Before_Initialization_Is_Mirrored_And_Buffered()
     {
-        DiagnosticsOptions options = new();
-        options.SetMirroredMessageTypes([MessageType.Warning]);
+        DiagnosticsSettings options = new();
+        options.MirroredTypes = [MessageType.Warning];
         CoreDiagnostics.Configure(options, Path.GetTempPath());
 
         StringWriter consoleOutput = new();
@@ -135,6 +135,10 @@ public sealed class DiagnosticsTests : IDisposable
         {
         }
 
+        public void Configure(DiagnosticsSettings options)
+        {
+        }
+
         public void Log(LogMessage log, bool isBufferedReplay = false)
         {
             _entries.Add(new LogEntry(log, isBufferedReplay));
@@ -158,6 +162,10 @@ public sealed class DiagnosticsTests : IDisposable
             => Task.CompletedTask;
 
         public void Shutdown()
+        {
+        }
+
+        public void Configure(DiagnosticsSettings options)
         {
         }
 

@@ -2,6 +2,7 @@
 using System.Reflection;
 
 using Engine.Core.Exceptions;
+using Engine.Core.Platform;
 using Engine.Core.Services;
 using Engine.Core.Settings;
 
@@ -18,8 +19,23 @@ namespace Engine.Core
             EngineVersion = GetEngineVersion();
         }
 
-        public static EngineHost CreateHost(string[] args, AssemblyMetadata metadata, EngineRuntime runtime)
+        /// <summary>
+        /// Creates the engine host from application-owned assemblies. Module packages
+        /// are data-only and are never accepted through this composition boundary.
+        /// </summary>
+        public static EngineHost CreateHost(
+            string[] args,
+            AssemblyMetadata metadata,
+            EngineRuntime runtime,
+            params Assembly[] trustedAssemblies)
         {
+            ArgumentNullException.ThrowIfNull(args);
+            ArgumentNullException.ThrowIfNull(trustedAssemblies);
+            if (trustedAssemblies.Any(assembly => assembly is null))
+            {
+                throw new ArgumentException("Trusted assemblies cannot contain null.", nameof(trustedAssemblies));
+            }
+
             LaunchArgumentParseResult launchArguments = Parse(args);
             FilePaths paths = FilePaths.FromMetadata(metadata);
 
@@ -28,20 +44,20 @@ namespace Engine.Core
                 throw new LaunchArgumentException(launchArguments.Issues);
             }
 
-            EngineOptions launchOptions = launchArguments.Options;
             SettingsManager settings = new SettingsManager(paths.Settings);
-            // There should be some way to "combine" interpreted launch arg override options + loaded options
-
-            Diagnostics.Configure(launchOptions.Diagnostics, paths.Diagnostics);
+            settings.Register(new EngineSettingsSection());
 
             Diagnostics.Message("Engine boot started...", nameof(Engine));
+            if (launchArguments.Bootstrap.Headless)
+            {
+                runtime = runtime with { ApplicationMode = ApplicationMode.Headless };
+            }
+
             EngineEnvironment.Initialize(runtime, EngineVersion);
 
             ServiceRegistry registry = new();
-            registry.ScanAssemblies([
-                typeof(Engine).Assembly
-            ]);
-            return new(registry, settings, launchArguments.UnclaimedArguments, metadata, paths);
+            registry.ScanAssemblies([typeof(Engine).Assembly, .. trustedAssemblies]);
+            return new(registry, settings, launchArguments.SettingsOverrides, launchArguments.UnclaimedArguments, metadata, paths);
         }
 
         private static Version GetEngineVersion()

@@ -7,10 +7,11 @@ namespace Engine.Core
         [RegisterService(typeof(ILogger), priority: 1)]
         internal class ConsoleLogger : ILogger
         {
-            public Task InitializeAsync(IServiceProvider services, IProgress<float> progress, CancellationToken cancellation)
+
+
+            public void Configure(DiagnosticsSettings options)
             {
-                progress.Report(1f);
-                return Task.CompletedTask;
+
             }
 
             public void Log(LogMessage log, bool isBufferedReplay = false)

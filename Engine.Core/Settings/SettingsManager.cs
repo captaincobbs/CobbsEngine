@@ -1,5 +1,7 @@
 ﻿using System.Text.Json;
 
+using System.Text.Json.Nodes;
+
 namespace Engine.Core.Settings
 {
     public class SettingsManager : ISettingsManager
@@ -13,6 +15,7 @@ namespace Engine.Core.Settings
         {
             WriteIndented = true,
             PropertyNameCaseInsensitive = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         };
 
         private readonly Dictionary<string, ISettingsSection> _sections = new(StringComparer.Ordinal);
@@ -27,7 +30,7 @@ namespace Engine.Core.Settings
             _settingsFilePath = Path.GetFullPath(settingsFilePath);
         }
 
-        public void Register(params ISettingsSection[] sections) => Register(sections);
+        public void Register(params ISettingsSection[] sections) => Register((IEnumerable<ISettingsSection>)sections);
 
         public void Register(IEnumerable<ISettingsSection> sections)
         {
@@ -42,7 +45,7 @@ namespace Engine.Core.Settings
                 }
             }
 
-            lock (_fileLock)
+            lock (_lock)
             {
                 EnsureState(SettingsState.Registering);
                 HashSet<string> seen = new(StringComparer.Ordinal);
@@ -84,7 +87,7 @@ namespace Engine.Core.Settings
             {
                 EnsureState(SettingsState.Loaded);
 
-                if (_sections.TryGetValue(key, out ISettingsSection? section))
+                if (!_sections.TryGetValue(key, out ISettingsSection? section))
                 {
                     throw new KeyNotFoundException($"No settings section registered as '{key}'.");
                 }
@@ -136,6 +139,14 @@ namespace Engine.Core.Settings
 
         public async Task<SettingsLoadResult> LoadAsync(CancellationToken cancellation = default)
         {
+            return await LoadAsync(Array.Empty<SettingsOverride>(), cancellation);
+        }
+
+        public async Task<SettingsLoadResult> LoadAsync(IEnumerable<SettingsOverride> overrides, CancellationToken cancellation = default)
+        {
+            ArgumentNullException.ThrowIfNull(overrides);
+            SettingsOverride[] requestedOverrides = [.. overrides];
+
             await _fileLock.WaitAsync(cancellation);
             try
             {
@@ -148,7 +159,7 @@ namespace Engine.Core.Settings
                 }
 
                 bool fileExists = File.Exists(_settingsFilePath);
-                JsonDocument? document = null;
+                JsonObject root = [];
                 List<SettingsIssue> allIssues = [];
 
                 try
@@ -156,12 +167,14 @@ namespace Engine.Core.Settings
                     if (fileExists)
                     {
                         string json = await File.ReadAllTextAsync(_settingsFilePath, cancellation);
-                        document = JsonDocument.Parse(json);
-                        if (document.RootElement.ValueKind != JsonValueKind.Object)
+                        JsonNode? parsed = JsonNode.Parse(json);
+                        if (parsed is not JsonObject parsedRoot)
                         {
                             allIssues.Add(new SettingsIssue(Key: null, SettingsIssueSeverity.Error, "The root of settings.json must be a JSON object."));
-                            document.Dispose();
-                            document = null;
+                        }
+                        else
+                        {
+                            root = parsedRoot;
                         }
                     }
                 }
@@ -174,30 +187,32 @@ namespace Engine.Core.Settings
                     allIssues.Add(new SettingsIssue(null, SettingsIssueSeverity.Error, "Could not read settings.json. Default were used", ex));
                 }
 
-                JsonElement? root = document?.RootElement;
+                ApplyOverrides(root, requestedOverrides, sections, allIssues);
+
+                using JsonDocument document = JsonDocument.Parse(root.ToJsonString());
+                JsonElement rootElement = document.RootElement;
                 List<SettingsSectionLoadResult> sectionResults = [];
                 foreach (ISettingsSection section in sections)
                 {
-                    JsonElement? serializedValue = null;
-                    if (root is JsonElement rootElement && rootElement.TryGetProperty(section.Key, out JsonElement property))
+                    JsonElement? serialized = null;
+                    if (rootElement.TryGetProperty(section.Key, out JsonElement property))
                     {
-                        SettingsSectionLoadResult result = section.Load(serializedValue, _jsonOptions);
-                        sectionResults.Add(result);
-                        allIssues.AddRange(result.Issues);
+                        serialized = property;
                     }
+
+                    SettingsSectionLoadResult result = section.Load(serialized, _jsonOptions);
+                    sectionResults.Add(result);
+                    allIssues.AddRange(result.Issues);
                 }
 
                 lock (_lock)
                 {
                     _unclaimedSections.Clear();
-                    if (root is JsonElement rootElement)
+                    foreach (JsonProperty property in rootElement.EnumerateObject())
                     {
-                        foreach (JsonProperty property in rootElement.EnumerateObject())
+                        if (!_sections.ContainsKey(property.Name))
                         {
-                            if (!_sections.ContainsKey(property.Name))
-                            {
-                                _unclaimedSections[property.Name] = property.Value.Clone();
-                            }
+                            _unclaimedSections[property.Name] = property.Value.Clone();
                         }
                     }
 
@@ -348,6 +363,72 @@ namespace Engine.Core.Settings
             if (_state != expected)
             {
                 throw new InvalidOperationException($"Settings manager must be {expected}, but is {_state}.");
+            }
+        }
+
+        private static void ApplyOverrides(
+            JsonObject root,
+            IEnumerable<SettingsOverride> overrides,
+            IEnumerable<ISettingsSection> sections,
+            ICollection<SettingsIssue> issues)
+        {
+            HashSet<string> registeredKeys = sections
+                .Select(section => section.Key)
+                .ToHashSet(StringComparer.Ordinal);
+
+            foreach (SettingsOverride entry in overrides)
+            {
+                if (string.IsNullOrWhiteSpace(entry.SectionKey))
+                {
+                    issues.Add(new SettingsIssue(null, SettingsIssueSeverity.Error, "A launch settings override had no section key."));
+                    continue;
+                }
+
+                if (!registeredKeys.Contains(entry.SectionKey))
+                {
+                    issues.Add(new SettingsIssue(entry.SectionKey, SettingsIssueSeverity.Error, "The launch settings override targets an unregistered section."));
+                    continue;
+                }
+
+                if (entry.PropertyPath.Count == 0 || entry.PropertyPath.Any(string.IsNullOrWhiteSpace))
+                {
+                    issues.Add(new SettingsIssue(entry.SectionKey, SettingsIssueSeverity.Error, "The launch settings override had an invalid property path."));
+                    continue;
+                }
+
+                if (root[entry.SectionKey] is null)
+                {
+                    root[entry.SectionKey] = new JsonObject();
+                }
+
+                if (root[entry.SectionKey] is not JsonObject current)
+                {
+                    issues.Add(new SettingsIssue(entry.SectionKey, SettingsIssueSeverity.Error, "The launch settings override cannot be applied because its section is not a JSON object."));
+                    continue;
+                }
+
+                for (int index = 0; index < entry.PropertyPath.Count - 1; index++)
+                {
+                    string segment = entry.PropertyPath[index];
+                    if (current[segment] is null)
+                    {
+                        current[segment] = new JsonObject();
+                    }
+
+                    if (current[segment] is not JsonObject child)
+                    {
+                        issues.Add(new SettingsIssue(entry.SectionKey, SettingsIssueSeverity.Error, $"The launch settings override cannot replace '{string.Join('.', entry.PropertyPath)}' because '{segment}' is not a JSON object."));
+                        current = null!;
+                        break;
+                    }
+
+                    current = child;
+                }
+
+                if (current is not null)
+                {
+                    current[entry.PropertyPath[^1]] = entry.Value?.DeepClone();
+                }
             }
         }
 

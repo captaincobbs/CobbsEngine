@@ -22,18 +22,17 @@ class Program
 
         try
         {
-            host = CobbsEngine.CreateHost(args, metadata, PlatformUtils.GetRuntimeInfo());
+            host = CobbsEngine.CreateHost(
+                args,
+                metadata,
+                PlatformUtils.GetRuntimeInfo(),
+                typeof(MainGame).Assembly,
+                typeof(EngineGame).Assembly);
             host.Settings.Register([
                 new AudioSettingsSection(),
                 new DisplaySettingsSection(),
                 new GameSettingsSection(),
                 new InputSettingsSection()
-            ]);
-
-            host.RegisterAssemblies([
-                typeof(MainGame).Assembly,
-                typeof(EngineGame).Assembly,
-                typeof(CobbsEngine).Assembly
             ]);
 
             await host.InitializeAsync(CancellationToken.None);

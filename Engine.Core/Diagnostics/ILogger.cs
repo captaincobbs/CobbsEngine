@@ -9,6 +9,8 @@ namespace Engine.Core
 
         internal interface ILogger : IService
         {
+            internal virtual void Configure(DiagnosticsSettings options) { }
+
             void Log(LogMessage log, bool isBufferedReplay = false);
         }
     }

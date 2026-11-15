@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
@@ -19,8 +19,8 @@
 	<InformationalVersion>0.0.0</InformationalVersion>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="Icon.ico" />
-    <None Remove="Icon.bmp" />
+	<None Remove="Icon.ico" />
+	<None Remove="Icon.bmp" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Icon.ico">

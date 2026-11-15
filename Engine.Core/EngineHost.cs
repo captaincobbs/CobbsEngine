@@ -15,21 +15,28 @@ namespace Engine.Core
         public readonly ServiceManager ServiceManager;
         public readonly ISettingsManager Settings;
         public readonly FilePaths Paths;
-        private readonly AssemblyMetadata metadata;
+        public readonly AssemblyMetadata Metadata;
 
 
         public IReadOnlyList<string> UnclaimedLaunchArguments { get; }
+        public IReadOnlyList<SettingsOverride> LaunchSettingsOverrides { get; }
 
         private CancellationTokenSource? _tokenSource;
         private readonly Lock _stateLock = new();
 
-        internal EngineHost(ServiceRegistry registry, ISettingsManager settings, IReadOnlyList<string> unclaimedArguments, AssemblyMetadata metadata, FilePaths paths)
+        internal EngineHost(ServiceRegistry registry, ISettingsManager settings, IReadOnlyList<SettingsOverride> launchSettingsOverrides, IReadOnlyList<string> unclaimedArguments, AssemblyMetadata metadata, FilePaths paths)
         {
-            State = LifecycleState.NotStarted;
+            lock (_stateLock)
+            {
+                State = LifecycleState.NotStarted;
+            }
             ServiceRegistry = registry;
             ServiceManager = registry.ServiceManager;
             Settings = settings;
+            LaunchSettingsOverrides = launchSettingsOverrides;
             UnclaimedLaunchArguments = unclaimedArguments;
+            Metadata = metadata;
+            Paths = paths;
         }
 
         // Progress should be passed in here probably? So the game can control the loading screen
@@ -51,8 +58,13 @@ namespace Engine.Core
 
             try
             {
-                await Settings.LoadAsync(tokenSource.Token);
+                await Settings.LoadAsync(LaunchSettingsOverrides, tokenSource.Token);
                 Settings.AdvanceTo(new(SettingsApplyPhase.Engine, ServiceManager));
+
+                EngineSettings engineSettings = Settings.Get<EngineSettings>(EngineSettingsSection.SectionKey);
+                Diagnostics.Configure(
+                    engineSettings.Diagnostics,
+                    engineSettings.Diagnostics.FolderPath ?? Paths.Diagnostics);
 
                 await ServiceManager.InitializeAsync(null, tokenSource.Token);
 
@@ -82,39 +94,39 @@ namespace Engine.Core
 
                 throw;
             }
-            // Get CompositeLogger here and attach it to diagnostics, feed it all other instances of other loggers? Maybe make Loggers not be a service?
-        }
-
-        public void RegisterAssemblies(IEnumerable<Assembly> assemblies)
-        {
-            ArgumentNullException.ThrowIfNull(assemblies);
-
-            if (State != LifecycleState.NotStarted)
-            {
-                throw new InvalidOperationException("Assemblies must be registered before engine initialization.");
-            }
-
-            ServiceRegistry.ScanAssemblies(assemblies);
         }
 
         public void Shutdown()
         {
-            try
+            if (State is not LifecycleState.Initialized && State is not LifecycleState.Initializing)
             {
-                State = LifecycleState.ShuttingDown;
-                _tokenSource?.Cancel();
-                ServiceManager.Shutdown();
+                throw new InvalidOperationException("Cannot shut down if it was not initialized");
             }
-            finally
+
+            lock (_stateLock)
             {
-                Diagnostics.Shutdown();
-                _tokenSource?.Dispose();
-                State = LifecycleState.Shutdown;
+                try
+                {
+                    State = LifecycleState.Shutdown;
+                    _tokenSource?.Cancel();
+                    ServiceManager.Shutdown();
+                }
+                finally
+                {
+                    Diagnostics.Shutdown();
+                    _tokenSource?.Dispose();
+                    State = LifecycleState.Shutdown;
+                }
             }
         }
 
         public void Dispose()
         {
+            if (State == LifecycleState.Shutdown)
+            {
+                return;
+            }
+
             Shutdown();
         }
     }
