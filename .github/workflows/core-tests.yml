@@ -23,8 +23,8 @@ jobs:
       - name: Restore Dependencies
         run: dotnet restore Engine.Core.Tests/Engine.Core.Tests.csproj
 
-      - name: Build Engine.Core tests
-        run: dotnet build Engine.Core.Tests/Engine.Core.Tests.csproj --no-restore --configuration Release
+      - name: Build tests
+        run: dotnet build Engine.Core.Tests/Engine.Core.Tests.csproj --no-restore Debug
 
-      - name: Run Engine.Core tests
-        run: dotnet test Engine.Core.Tests/Engine.Core.Tests.csproj --no-build --configuration Release --verbosity normal
+      - name: Run tests
+        run: dotnet test Engine.Core.Tests/Engine.Core.Tests.csproj --no-build Debug --verbosity normal
