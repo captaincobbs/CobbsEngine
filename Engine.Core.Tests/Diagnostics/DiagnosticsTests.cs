@@ -62,7 +62,7 @@ public sealed class DiagnosticsTests : IDisposable
     {
         DiagnosticsOptions options = new();
         options.SetMirroredMessageTypes([MessageType.Warning]);
-        CoreDiagnostics.Configure(options);
+        CoreDiagnostics.Configure(options, Path.GetTempPath());
 
         StringWriter consoleOutput = new();
         TextWriter originalError = Console.Error;

@@ -1,5 +1,6 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 
+using Engine.Core;
 using Engine.Core.Platform;
 using Engine.Core.Services;
 using Engine.Core.Services.Attributes;
@@ -10,6 +11,13 @@ namespace Engine.Core.Tests.Services
 {
     public sealed class ServiceManagerTests
     {
+        static ServiceManagerTests()
+        {
+            EngineEnvironment.Initialize(
+                CreateWindowedEnvironment(),
+                new Version(1, 0, 0));
+        }
+
         [Fact]
         public async Task InitializeAsync_Initializes_And_Reports_Properly()
         {
@@ -38,7 +46,7 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 70,
                 failureBehavior: ServiceFailureBehavior.StopInitialization);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
             CapturingProgress progress = new();
 
             Task initialization = manager.InitializeAsync(progress, CancellationToken.None);
@@ -106,7 +114,7 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 1,
                 failureBehavior: ServiceFailureBehavior.StopInitialization);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
 
             await manager.InitializeAsync(null, CancellationToken.None);
 
@@ -137,7 +145,7 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 1,
                 failureBehavior: ServiceFailureBehavior.StopInitialization);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
 
             Func<Task> act = () => manager.InitializeAsync(null, CancellationToken.None);
 
@@ -168,13 +176,69 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 1,
                 failureBehavior: ServiceFailureBehavior.StopInitialization);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
 
             await manager.InitializeAsync(null, CancellationToken.None);
 
             manager.Get<IPlatformService>()
                 .Should()
                 .BeOfType<CrossPlatformService>();
+        }
+
+        [Fact]
+        public async Task InitializeAsync_Ignores_An_Incompatible_Graphics_Service()
+        {
+            ServiceRegistrar registrar = new();
+
+            registrar.RegisterService(
+                typeof(IGraphicsFilteredService),
+                typeof(DirectXOnlyService),
+                priority: 100,
+                loadingWeight: 1,
+                failureBehavior: ServiceFailureBehavior.StopInitialization);
+
+            registrar.RegisterService(
+                typeof(IGraphicsFilteredService),
+                typeof(OpenGlService),
+                priority: 10,
+                loadingWeight: 1,
+                failureBehavior: ServiceFailureBehavior.StopInitialization);
+
+            ServiceManager manager = new(registrar);
+
+            await manager.InitializeAsync(null, CancellationToken.None);
+
+            manager.Get<IGraphicsFilteredService>()
+                .Should()
+                .BeOfType<OpenGlService>();
+        }
+
+        [Fact]
+        public async Task InitializeAsync_Ignores_An_Incompatible_Application_Mode_Service()
+        {
+            ServiceRegistrar registrar = new();
+
+            registrar.RegisterService(
+                typeof(IApplicationModeFilteredService),
+                typeof(HeadlessOnlyService),
+                priority: 100,
+                loadingWeight: 1,
+                failureBehavior: ServiceFailureBehavior.StopInitialization);
+
+            registrar.RegisterService(
+                typeof(IApplicationModeFilteredService),
+                typeof(WindowedCompatibleService),
+                priority: 10,
+                loadingWeight: 1,
+                failureBehavior: ServiceFailureBehavior.StopInitialization);
+
+            ServiceManager manager = new(registrar);
+
+            await manager.InitializeAsync(null, CancellationToken.None);
+
+            manager.Get<IApplicationModeFilteredService>()
+                .Should()
+                .BeOfType<WindowedCompatibleService>();
         }
 
         [Fact]
@@ -191,7 +255,7 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 1,
                 failureBehavior: ServiceFailureBehavior.StopInitialization);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
 
             Func<Task> act = () => manager.InitializeAsync(null, CancellationToken.None);
 
@@ -223,7 +287,7 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 1,
                 failureBehavior: ServiceFailureBehavior.StopInitialization);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
 
             Func<Task> act = () => manager.InitializeAsync(null, CancellationToken.None);
 
@@ -256,7 +320,7 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 1,
                 failureBehavior: ServiceFailureBehavior.StopInitialization);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
 
             Func<Task> act = () => manager.InitializeAsync(null, CancellationToken.None);
 
@@ -287,7 +351,7 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 1,
                 failureBehavior: failureBehavior);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
 
             Func<Task> act = () => manager.InitializeAsync(
                 progress: null,
@@ -309,7 +373,7 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 1,
                 failureBehavior: ServiceFailureBehavior.StopInitialization);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
             await manager.InitializeAsync(null, CancellationToken.None);
             manager.State.Should().Be(LifecycleState.Initialized);
         }
@@ -325,7 +389,7 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 1,
                 failureBehavior: ServiceFailureBehavior.StopInitialization);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
             await manager.InitializeAsync(null, CancellationToken.None);
             Func<Task> act = () => manager.InitializeAsync(null, CancellationToken.None);
 
@@ -343,7 +407,7 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 1,
                 failureBehavior: ServiceFailureBehavior.StopInitialization);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
             Func<Action> action = () => manager.Shutdown;
             action.Should().NotThrow();
         }
@@ -362,7 +426,7 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 1,
                 failureBehavior: ServiceFailureBehavior.StopInitialization);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
 
             await manager.InitializeAsync(null, CancellationToken.None);
 
@@ -385,7 +449,7 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 1,
                 failureBehavior: ServiceFailureBehavior.StopInitialization);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
 
             Func<Task> act = () => manager.InitializeAsync(null, CancellationToken.None);
 
@@ -408,7 +472,7 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 1,
                 failureBehavior: ServiceFailureBehavior.StopInitialization);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
 
             using CancellationTokenSource cancellation = new();
 
@@ -446,7 +510,7 @@ namespace Engine.Core.Tests.Services
                 loadingWeight: 1,
                 failureBehavior: ServiceFailureBehavior.StopInitialization);
 
-            ServiceManager manager = new(registrar, CreateWindowedEnvironment());
+            ServiceManager manager = new(registrar);
 
             await manager.InitializeAsync(null, CancellationToken.None);
 
@@ -488,6 +552,8 @@ namespace Engine.Core.Tests.Services
         public interface IPriorityService : IService;
         public interface ITieService : IService;
         public interface IPlatformService : IService;
+        public interface IGraphicsFilteredService : IService;
+        public interface IApplicationModeFilteredService : IService;
         public interface IMissingDependencyService : IService;
         public interface IUnregisteredService : IService;
         public interface ICycleServiceA : IService;
@@ -564,6 +630,17 @@ namespace Engine.Core.Tests.Services
         public sealed class LinuxOnlyService : IPlatformService { }
 
         public sealed class CrossPlatformService : IPlatformService { }
+
+        [GraphicsBackend(GraphicsAPI.DirectX)]
+        public sealed class DirectXOnlyService : IGraphicsFilteredService { }
+
+        [GraphicsBackend(GraphicsAPI.OpenGL)]
+        public sealed class OpenGlService : IGraphicsFilteredService { }
+
+        [ApplicationMode(ApplicationMode.Headless)]
+        public sealed class HeadlessOnlyService : IApplicationModeFilteredService { }
+
+        public sealed class WindowedCompatibleService : IApplicationModeFilteredService { }
 
         [DependsOn(typeof(IUnregisteredService))]
         public sealed class MissingDependencyService : IMissingDependencyService
